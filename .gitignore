@@ -1,0 +1,49 @@
+# --- Gradle ---
+# Everything Gradle generates. gradle/wrapper/ is deliberately not here: the wrapper
+# jar and properties have to be committed or `gradlew` fails on a fresh clone.
+.gradle/
+build/
+out/
+classes/
+bin/
+
+# --- Fabric Loom ---
+# Decompiled and remapped Minecraft, plus the dev-client run directory. All of it is
+# rebuilt from the versions in gradle.properties.
+.fabric/
+remappedSrc/
+run/
+
+# Local jars dropped in for the flatDir repository in build.gradle. Someone else's mod
+# is not ours to redistribute.
+libs/
+
+# --- IDE ---
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+.settings/
+.classpath
+.project
+*.launch
+
+# --- Logs and crash dumps ---
+*.log
+logs/
+crash-reports/
+hs_err_pid*
+replay_pid*
+*.hprof
+
+# --- AI assistant files ---
+CLAUDE.md
+GEMINI.md
+.claude/
+.agent/
+
+# --- OS junk ---
+.DS_Store
+Thumbs.db
+desktop.ini

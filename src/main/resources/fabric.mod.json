@@ -1,0 +1,44 @@
+{
+    "schemaVersion": 1,
+    "id": "eympotionhud",
+    "version": "${version}",
+    "name": "Eymistaken's Potion HUD",
+    "description": "One choice about how your status effects are shown: leave Minecraft's icons alone, weave a duration readout and an expiry warning into them, replace them with a fully configurable list you can put anywhere, or hide them entirely. Runs on its own, and becomes a draggable module when Eymistaken's HUD is installed.",
+    "authors": [
+        "Eymistaken"
+    ],
+    "contact": {
+        "homepage": "https://eymistaken.github.io/Eymistaken-s-HUD-Website/"
+    },
+    "license": "MIT",
+    "icon": "assets/eympotionhud/icon.png",
+    "environment": "client",
+    "entrypoints": {
+        "client": [
+            "com.eymistaken.potionhud.PotionHudClient"
+        ],
+        "eymistaken_hud": [
+            "com.eymistaken.potionhud.PotionHudPlugin"
+        ],
+        "modmenu": [
+            "com.eymistaken.potionhud.compat.ModMenuIntegration"
+        ]
+    },
+    "depends": {
+        "fabricloader": ">=0.18.4",
+        "fabric-api": "*",
+        "minecraft": ">=26.1 <=26.2",
+        "java": ">=25"
+    },
+    "suggests": {
+        "simplecps": ">=1.1.1-6",
+        "cloth-config": "*",
+        "modmenu": "*"
+    },
+    "custom": {
+        "eympotionhud:notes": [
+            "All three suggestions are genuinely optional and each is guarded by an isModLoaded check: simplecps turns the displays into draggable HUD modules, cloth-config gives the standalone build a settings screen, and modmenu adds the button that opens it.",
+            "The simplecps floor carries its -6 suffix on purpose. Semver ranks 1.1.1-7 BELOW plain 1.1.1, so a >=1.1.1 floor would reject the very releases this was built against."
+        ]
+    }
+}
