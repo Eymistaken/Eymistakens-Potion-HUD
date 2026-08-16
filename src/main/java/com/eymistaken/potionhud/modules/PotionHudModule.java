@@ -1,5 +1,6 @@
 package com.eymistaken.potionhud.modules;
 
+import com.eymistaken.potionhud.EffectTracker;
 import com.eymistaken.potionhud.HudCompat;
 import com.eymistaken.potionhud.PotionHudConfig;
 import com.eymistaken.potionhud.PotionHudConfig.Anchor;
@@ -16,9 +17,11 @@ import com.eymistaken.potionhud.PotionHudConfig.Style;
 import com.eymistaken.potionhud.PotionHudConfig.TimeFormat;
 import com.eymistaken.potionhud.PotionHudConfig.VanillaBar;
 import com.eymistaken.potionhud.render.TextSink;
+import com.eymistaken.potionhud.render.VanillaIconGrid;
 import com.eymistaken.potionhud.util.Enums;
 import com.eymistaken.potionhud.view.PotionListView;
 import com.eymistaken.potionhud.view.PotionViews;
+import com.eymistaken.simplecps.HudPlacementResolver;
 import com.eymistaken.simplecps.SimpleCPSConfig;
 import com.eymistaken.simplecps.SimpleCPSConfig.Position;
 import com.eymistaken.simplecps.api.ActionSetting;
@@ -86,6 +89,50 @@ public class PotionHudModule extends HudModule {
         return HudCompat.editorOpen() && !listActive();
     }
 
+    /**
+     * Whether the module is standing in for Minecraft's own effect icons right now.
+     *
+     * <p>True only inside the editor, and only in the modes that put icons in the corner:
+     * both vanilla-icon modes, and the master switch being off — which also leaves the
+     * icons on screen, untouched. The editor is where the mod has to answer "what does
+     * this mode look like", and a box drawn in the shape of the custom list was the wrong
+     * answer three times out of four.
+     *
+     * <p>Outside the editor this is false, so every accessor below falls back to exactly
+     * what it did before: the list, or nothing.
+     */
+    private static boolean iconPreview() {
+        if (!HudCompat.editorOpen()) return false;
+        DisplaySettings display = display();
+        if (!display.enabled) return true;
+        DisplayMode mode = display.mode == null ? DisplayMode.ENHANCED : display.mode;
+        return mode == DisplayMode.VANILLA || mode == DisplayMode.ENHANCED;
+    }
+
+    /** The extras are the enhanced mode's alone; the other two previews are plain icons. */
+    private static boolean previewExtras() {
+        DisplaySettings display = display();
+        return display.enabled && display.mode == DisplayMode.ENHANCED;
+    }
+
+    private static List<VanillaIconGrid.Cell> previewCells(int screenWidth) {
+        DisplaySettings display = display();
+        return VanillaIconGrid.layout(display,
+            VanillaIconGrid.previewEffects(EffectTracker.snapshots()), screenWidth);
+    }
+
+    /**
+     * The vanilla grid's rectangle on screen as {@code {x, y, width, height}}, or null
+     * when it could not be measured.
+     *
+     * <p>Measured off the window rather than a render context because the editor asks for
+     * the module's box from its mouse handlers too, long after the frame is gone.
+     */
+    private int[] iconRect() {
+        int screenWidth = client.getWindow().getGuiScaledWidth();
+        return VanillaIconGrid.bounds(display(), previewCells(screenWidth));
+    }
+
     private static PotionListView view() {
         return PotionViews.LIST;
     }
@@ -104,39 +151,62 @@ public class PotionHudModule extends HudModule {
 
     @Override
     public Position getPositionType() {
-        return AnchorMap.toHud(cfg().anchor);
+        // Vanilla's grid hangs off the top-right corner, which is what makes the offsets
+        // below mean anything.
+        return iconPreview() ? Position.TOP_RIGHT : AnchorMap.toHud(cfg().anchor);
     }
 
     @Override
     public void setPositionType(Position pos) {
+        if (iconPreview()) return;
         cfg().anchor = AnchorMap.fromHud(pos);
         PotionHudConfig.markDirty();
     }
 
+    /**
+     * Where the preview sits, measured from the corner the host would anchor it to.
+     *
+     * <p>The editor reads our own {@link #getX()} for the box it draws, but the host's
+     * placement pass works from the anchor and these offsets — so reporting the grid here
+     * too is what stops it reserving a slice of the corner somewhere the icons are not.
+     */
     @Override
     public int getXOffset() {
-        return cfg().xOffset;
+        int[] rect = iconPreview() ? iconRect() : null;
+        if (rect == null) return cfg().xOffset;
+        return rect[0] - (client.getWindow().getGuiScaledWidth() - rect[2] - HudPlacementResolver.EDGE_GAP);
     }
 
     @Override
     public int getYOffset() {
-        return cfg().yOffset;
+        int[] rect = iconPreview() ? iconRect() : null;
+        if (rect == null) return cfg().yOffset;
+        return rect[1] - HudPlacementResolver.EDGE_GAP;
     }
+
+    // Minecraft decides where its own icons go, so while the preview is standing in for
+    // them there is nothing for a drag, a nudge or a scroll to write to. Refusing the
+    // write is what keeps the box on top of the icons it is describing; the list's real
+    // placement is still editable from the settings screen, where the editor is closed
+    // and every accessor here reads its stored value again.
 
     @Override
     public void setXOffset(int x) {
+        if (iconPreview()) return;
         cfg().xOffset = x;
         PotionHudConfig.markDirty();
     }
 
     @Override
     public void setYOffset(int y) {
+        if (iconPreview()) return;
         cfg().yOffset = y;
         PotionHudConfig.markDirty();
     }
 
     @Override
     public void setScale(int scale) {
+        if (iconPreview()) return;
         cfg().scale = scale;
         PotionHudConfig.markDirty();
     }
@@ -144,6 +214,25 @@ public class PotionHudModule extends HudModule {
     @Override
     public int getScale() {
         return cfg().scale;
+    }
+
+    // --- The editor's box ----------------------------------------------------------
+
+    /**
+     * The preview draws where Minecraft's icons actually are, not where the host placed
+     * the module, so the box, the hover outline and the right-click hit test all have to
+     * be told the same thing.
+     */
+    @Override
+    public int getX() {
+        int[] rect = iconPreview() ? iconRect() : null;
+        return rect == null ? super.getX() : rect[0];
+    }
+
+    @Override
+    public int getY() {
+        int[] rect = iconPreview() ? iconRect() : null;
+        return rect == null ? super.getY() : rect[1];
     }
 
     @Override
@@ -177,11 +266,15 @@ public class PotionHudModule extends HudModule {
 
     @Override
     public int getWidth() {
+        int[] rect = iconPreview() ? iconRect() : null;
+        if (rect != null) return rect[2];
         return listActive() || editorHandle() ? view().scaledWidth(sink) : 0;
     }
 
     @Override
     public int getHeight() {
+        int[] rect = iconPreview() ? iconRect() : null;
+        if (rect != null) return rect[3];
         return listActive() || editorHandle() ? view().scaledHeight(sink) : 0;
     }
 
@@ -191,6 +284,11 @@ public class PotionHudModule extends HudModule {
     public void extractRenderState(GuiGraphicsExtractor context, float tickDelta) {
         sink.setAlpha(renderAlpha);
 
+        if (iconPreview() && drawIconPreview(context)) {
+            refreshGroupBounds(null);
+            return;
+        }
+
         if (listActive() || editorHandle()) {
             PotionListView.Frame frame = view().frame(sink);
             refreshGroupBounds(frame);
@@ -198,6 +296,50 @@ public class PotionHudModule extends HudModule {
         } else {
             refreshGroupBounds(null);
         }
+    }
+
+    /**
+     * The chosen mode as it will actually look, drawn where it will actually be.
+     *
+     * <p>Minecraft's own effect layer is switched off while the editor is open (see
+     * {@code VanillaEffectOverlay}), so this draws the icons as well as anything the mode
+     * adds to them. Nothing here reads {@code this.x/this.y}: the grid's position is
+     * Minecraft's, and {@link #getX()} reports it back so the box lands on top.
+     *
+     * @return false when there was nothing to draw, so the caller can fall back to the
+     *         list's placeholder rather than leaving the editor with nothing to grab
+     */
+    private boolean drawIconPreview(GuiGraphicsExtractor context) {
+        DisplaySettings display = display();
+        List<VanillaIconGrid.Cell> cells = previewCells(context.guiWidth());
+        if (cells.isEmpty()) return false;
+
+        VanillaIconGrid.drawIcons(context, sink, display, cells);
+        if (previewExtras()) {
+            VanillaIconGrid.drawExtras(context, sink, display, cells);
+        }
+        drawPinnedHint(context, VanillaIconGrid.bounds(display, cells));
+        return true;
+    }
+
+    /**
+     * One line under the grid saying why it will not move.
+     *
+     * <p>The box refuses to be dragged, and a control that ignores you without saying so
+     * reads as broken. Half size and half opacity: it is a note in the editor, not part
+     * of the HUD.
+     */
+    private void drawPinnedHint(GuiGraphicsExtractor context, int[] rect) {
+        if (rect == null) return;
+        final float scale = 0.5f;
+        String hint = "Minecraft's own position";
+        float width = sink.width(hint) * scale;
+
+        context.pose().pushMatrix();
+        context.pose().translate(rect[0] + rect[2] - width, rect[1] + rect[3] + 2f);
+        context.pose().scale(scale, scale);
+        sink.text(context, hint, 0, 0, 0x99FFFFFF);
+        context.pose().popMatrix();
     }
 
     /** Keep the sub-elements' on-screen rectangles current for the editor's hit testing. */
