@@ -80,17 +80,26 @@ final class PotionPreview implements HudPreview {
 
     /** The extras are the enhanced mode's alone; the other two grids are plain icons. */
     private static boolean extras() {
-        return display().enabled && mode() == DisplayMode.ENHANCED;
+        return VanillaIconGrid.drawsOwnGrid(display());
+    }
+
+    /**
+     * Where the icons go. Our spacing settings only apply in the mode where we paint the
+     * grid ourselves; everywhere else the card has to lay it out the way Minecraft will,
+     * or it would promise movement the game never delivers.
+     */
+    private static DisplaySettings geometry() {
+        return VanillaIconGrid.geometryFor(display());
     }
 
     private static List<VanillaIconGrid.Cell> cells() {
-        return VanillaIconGrid.layout(display(),
+        return VanillaIconGrid.layout(geometry(),
             PreviewEffects.forGrid(EffectTracker.snapshots()), GRID_REF_WIDTH);
     }
 
     /** The grid's own rectangle as {@code {x, y, width, height}}, or null when empty. */
     private static int[] gridRect() {
-        return VanillaIconGrid.bounds(display(), cells());
+        return VanillaIconGrid.bounds(geometry(), cells());
     }
 
     // --- Size -------------------------------------------------------------------
@@ -138,16 +147,16 @@ final class PotionPreview implements HudPreview {
      * transform is untouched.
      */
     private void drawGrid(GuiGraphicsExtractor context) {
-        DisplaySettings display = display();
+        DisplaySettings geometry = geometry();
         List<VanillaIconGrid.Cell> cells = cells();
-        int[] rect = VanillaIconGrid.bounds(display, cells);
+        int[] rect = VanillaIconGrid.bounds(geometry, cells);
         if (rect == null) return;
 
         context.pose().pushMatrix();
         context.pose().translate((float) -rect[0], (float) -rect[1]);
-        VanillaIconGrid.drawIcons(context, sink, display, cells);
+        VanillaIconGrid.drawIcons(context, sink, geometry, cells);
         if (extras()) {
-            VanillaIconGrid.drawExtras(context, sink, display, cells);
+            VanillaIconGrid.drawExtras(context, sink, display(), cells);
         }
         context.pose().popMatrix();
     }

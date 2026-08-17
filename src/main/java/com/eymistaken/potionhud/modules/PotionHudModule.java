@@ -116,13 +116,14 @@ public class PotionHudModule extends HudModule {
 
     /** The extras are the enhanced mode's alone; the other two previews are plain icons. */
     private static boolean previewExtras() {
-        DisplaySettings display = display();
-        return display.enabled && display.mode == DisplayMode.ENHANCED;
+        return VanillaIconGrid.drawsOwnGrid(display());
     }
 
     private static List<VanillaIconGrid.Cell> previewCells(int screenWidth) {
-        DisplaySettings display = display();
-        return VanillaIconGrid.layout(display,
+        // Our spacing only applies where we do the painting. In the modes Minecraft draws,
+        // the preview has to use its numbers, or it would show icons sliding around under
+        // a slider that cannot move them.
+        return VanillaIconGrid.layout(VanillaIconGrid.geometryFor(display()),
             PreviewEffects.forGrid(EffectTracker.snapshots()), screenWidth);
     }
 
@@ -135,7 +136,8 @@ public class PotionHudModule extends HudModule {
      */
     private int[] iconRect() {
         int screenWidth = client.getWindow().getGuiScaledWidth();
-        return VanillaIconGrid.bounds(display(), previewCells(screenWidth));
+        return VanillaIconGrid.bounds(
+            VanillaIconGrid.geometryFor(display()), previewCells(screenWidth));
     }
 
     private static PotionListView view() {
@@ -316,14 +318,15 @@ public class PotionHudModule extends HudModule {
      */
     private boolean drawIconPreview(GuiGraphicsExtractor context) {
         DisplaySettings display = display();
+        DisplaySettings geometry = VanillaIconGrid.geometryFor(display);
         List<VanillaIconGrid.Cell> cells = previewCells(context.guiWidth());
         if (cells.isEmpty()) return false;
 
-        VanillaIconGrid.drawIcons(context, sink, display, cells);
+        VanillaIconGrid.drawIcons(context, sink, geometry, cells);
         if (previewExtras()) {
             VanillaIconGrid.drawExtras(context, sink, display, cells);
         }
-        drawPinnedHint(context, VanillaIconGrid.bounds(display, cells));
+        drawPinnedHint(context, VanillaIconGrid.bounds(geometry, cells));
         return true;
     }
 

@@ -10,6 +10,7 @@ import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElement;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.screens.Screen;
 
 /**
  * Wraps Minecraft's own top-right effect icons, and is the only thing standing between the
@@ -59,23 +60,41 @@ public final class VanillaEffectOverlay implements HudElement {
         // not to have it in two places at once.
         if (mode == DisplayMode.HIDDEN || mode == DisplayMode.CUSTOM) return;
 
-        original.extractRenderState(graphics, deltaTracker);
+        // VANILLA means exactly that: Minecraft's icons, untouched, nothing added.
+        if (mode != DisplayMode.ENHANCED) {
+            original.extractRenderState(graphics, deltaTracker);
+            return;
+        }
 
-        if (mode == DisplayMode.ENHANCED) drawExtras(graphics, cfg);
+        drawGrid(graphics, cfg);
     }
 
-    private void drawExtras(GuiGraphicsExtractor context, DisplaySettings cfg) {
+    /**
+     * The enhanced grid, icons and all.
+     *
+     * <p>Minecraft's own element is deliberately not called here. It lays its icons out
+     * with numbers of its own that it never reports, so anything drawn onto them has to
+     * guess where they are — and the moment the spacing settings say something different
+     * from that guess, the readouts slide off the icons they belong to while the icons
+     * themselves sit still. Painting both from one set of numbers is what makes those
+     * settings mean something.
+     */
+    private void drawGrid(GuiGraphicsExtractor context, DisplaySettings cfg) {
         Minecraft client = Minecraft.getInstance();
         if (client.player == null || client.level == null) return;
-        // Vanilla hands the effect display over to the screen when one is open; drawing
-        // over an empty corner would leave the extras floating on their own.
-        if (client.gui.screen() != null) return;
+
+        // Vanilla stands its own display down for a screen that shows the effects itself,
+        // and only for such a screen — an inventory, not the chat box. Standing down for
+        // every screen would make the icons vanish the moment anyone opened one.
+        Screen screen = client.gui.screen();
+        if (screen != null && screen.showsActiveEffects()) return;
 
         List<VanillaIconGrid.Cell> cells =
             VanillaIconGrid.layout(cfg, EffectTracker.snapshots(), context.guiWidth());
         if (cells.isEmpty()) return;
 
         sink.setAlpha(1f);
+        VanillaIconGrid.drawIcons(context, sink, cfg, cells);
         VanillaIconGrid.drawExtras(context, sink, cfg, cells);
     }
 }

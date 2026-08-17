@@ -2,6 +2,7 @@ package com.eymistaken.potionhud.render;
 
 import com.eymistaken.potionhud.EffectSnapshot;
 import com.eymistaken.potionhud.PotionHudConfig;
+import com.eymistaken.potionhud.PotionHudConfig.DisplayMode;
 import com.eymistaken.potionhud.PotionHudConfig.DisplaySettings;
 import com.eymistaken.potionhud.PotionHudConfig.IconStyle;
 import com.eymistaken.potionhud.PotionHudConfig.TimeFormat;
@@ -14,16 +15,23 @@ import java.util.List;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.resources.Identifier;
+import net.minecraft.util.ARGB;
+import net.minecraft.util.Mth;
 
 /**
  * Minecraft's own top-right effect grid: where each icon lands, and everything this mod
  * draws onto or in place of one.
  *
- * <p>Two callers, one arithmetic. {@link VanillaEffectOverlay} uses it in game, where
- * Minecraft paints the icons and we only add to them; the HUD module uses it in the
- * editor, where Minecraft's own layer is switched off and the whole grid — frames,
- * sprites and extras — is drawn from here instead. Sharing this class is what keeps the
- * editor's preview from drifting away from what the game actually shows.
+ * <p>One arithmetic, but who it describes depends on the mode.
+ * {@link PotionHudConfig.DisplayMode#ENHANCED} draws the whole grid from here — frames,
+ * sprites and extras — because an extra can only be put on an icon whose position we
+ * decided. Every other mode leaves the icons to Minecraft and this class is only
+ * measuring them.
+ *
+ * <p>That distinction is what {@link #geometryFor} exists for, and getting it wrong is
+ * visible: the spacing settings move the grid where we paint it, and mean nothing at all
+ * where Minecraft does. A preview that used our numbers for a mode Minecraft draws would
+ * show icons sliding around that never move in game.
  *
  * <p>The grid is re-derived rather than read back from Minecraft, because the vanilla
  * element does not report its layout. Every number in it is a setting, so a future change
@@ -34,12 +42,67 @@ public final class VanillaIconGrid {
     /** Vanilla draws the 18x18 effect sprite inset inside its 24x24 frame. */
     public static final int FRAME_INSET = 3;
 
+    // Minecraft's own numbers, read off Hud.extractEffects: each icon is a 24x24 frame,
+    // rows step 25 across and the second row sits 26 below the first, which starts one
+    // pixel down from the top right corner. The defaults in DisplaySettings match these
+    // on purpose; these are here so the match is stated rather than assumed.
+    private static final int VANILLA_PITCH = 25;
+    private static final int VANILLA_ROW_GAP = 26;
+    private static final int VANILLA_ORIGIN_X = 0;
+    private static final int VANILLA_ORIGIN_Y = 1;
+    private static final int VANILLA_CELL = 24;
+
+    /** Vanilla's effect icons fade in and out over their last ten seconds. */
+    private static final int VANILLA_FADE_TICKS = 200;
+
+    /**
+     * A stand-in carrying Minecraft's layout, for the modes where Minecraft is the one
+     * laying it out. Only the grid fields on it mean anything — read anything else from
+     * the real config.
+     */
+    private static final DisplaySettings VANILLA_GEOMETRY = vanillaGeometry();
+
     private static final Identifier FRAME =
         Identifier.fromNamespaceAndPath("minecraft", "hud/effect_background");
     private static final Identifier FRAME_AMBIENT =
         Identifier.fromNamespaceAndPath("minecraft", "hud/effect_background_ambient");
 
     private VanillaIconGrid() {}
+
+    private static DisplaySettings vanillaGeometry() {
+        DisplaySettings geometry = new DisplaySettings();
+        geometry.gridPitch = VANILLA_PITCH;
+        geometry.gridRowGap = VANILLA_ROW_GAP;
+        geometry.gridOriginX = VANILLA_ORIGIN_X;
+        geometry.gridOriginY = VANILLA_ORIGIN_Y;
+        geometry.gridIconSize = VANILLA_CELL;
+        return geometry;
+    }
+
+    /**
+     * True in the one mode where this mod paints the icons instead of Minecraft.
+     *
+     * <p>Only then do the spacing settings decide anything: everywhere else Minecraft has
+     * already put the icons where it wants them and never asked us.
+     */
+    public static boolean drawsOwnGrid(DisplaySettings cfg) {
+        if (!cfg.enabled) return false;
+        DisplayMode mode = cfg.mode == null ? DisplayMode.ENHANCED : cfg.mode;
+        return mode == DisplayMode.ENHANCED;
+    }
+
+    /**
+     * The geometry the icons are actually laid out with: ours when we draw them,
+     * Minecraft's when it does.
+     *
+     * <p>Pass the result to {@link #layout}, {@link #bounds} and {@link #drawIcons}, which
+     * between them have to agree on where a cell is. {@link #drawExtras} takes the real
+     * config instead — it runs only where we own the grid, so the two are the same object
+     * there, and it needs the warning and readout settings the stand-in does not carry.
+     */
+    public static DisplaySettings geometryFor(DisplaySettings cfg) {
+        return drawsOwnGrid(cfg) ? cfg : VANILLA_GEOMETRY;
+    }
 
     /** One effect and the top-left corner of the frame it is drawn in. */
     public record Cell(EffectSnapshot snap, int x, int y) {}
@@ -127,14 +190,39 @@ public final class VanillaIconGrid {
                                  DisplaySettings cfg, List<Cell> cells) {
         int cell = cellSize(cfg);
         int inner = Math.max(1, cell - FRAME_INSET * 2);
-        int tint = sink.col(0xFFFFFFFF);
+        int frameTint = sink.col(0xFFFFFFFF);
 
         for (Cell c : cells) {
-            Identifier frame = c.snap().ambient() ? FRAME_AMBIENT : FRAME;
-            context.blitSprite(RenderPipelines.GUI_TEXTURED, frame, c.x(), c.y(), cell, cell, tint);
-            PotionIcons.draw(context, c.snap(), c.x() + FRAME_INSET, c.y() + FRAME_INSET,
-                inner, IconStyle.SPRITE, tint);
+            EffectSnapshot snap = c.snap();
+            Identifier frame = snap.ambient() ? FRAME_AMBIENT : FRAME;
+            // The frame stays solid and only the icon inside it fades, which is vanilla's
+            // rule rather than ours: it keeps the row readable as the effect runs out.
+            context.blitSprite(RenderPipelines.GUI_TEXTURED, frame, c.x(), c.y(), cell, cell, frameTint);
+            PotionIcons.draw(context, snap, c.x() + FRAME_INSET, c.y() + FRAME_INSET,
+                inner, IconStyle.SPRITE, sink.col(ARGB.white(expiryFade(snap))));
         }
+    }
+
+    /**
+     * Vanilla's own pulse as an effect runs out, reproduced rather than invented.
+     *
+     * <p>Minecraft fades an icon in and out over its last ten seconds, and until this mod
+     * started painting the grid itself that came for free. Dropping it would have been a
+     * silent change to how every enhanced-mode icon looks, so the arithmetic is lifted
+     * from {@code Hud.extractEffects}: a floor that sinks as the time does, plus a cosine
+     * swing that widens the closer it gets to nothing.
+     *
+     * <p>Ambient effects are exempt, exactly as they are in vanilla — a beacon does not
+     * flash at you — and so is anything infinite, which never runs out to warn about.
+     */
+    private static float expiryFade(EffectSnapshot snap) {
+        if (snap.ambient() || snap.infinite()) return 1f;
+        int duration = snap.duration();
+        if (duration > VANILLA_FADE_TICKS) return 1f;
+
+        float floor = Mth.clamp(duration / 10.0f / 5.0f * 0.5f, 0.0f, 0.5f);
+        float swing = Mth.clamp((10 - duration / 20) / 10.0f * 0.25f, 0.0f, 0.25f);
+        return Mth.clamp(floor + (float) Math.cos(duration * Math.PI / 5.0) * swing, 0.0f, 1.0f);
     }
 
     /**
