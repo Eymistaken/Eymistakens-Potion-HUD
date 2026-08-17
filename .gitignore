@@ -37,6 +37,11 @@ hs_err_pid*
 replay_pid*
 *.hprof
 
+# --- Working notes ---
+# Draft release notes and anything else written for a release rather than for the repo.
+# The published copy lives on the release itself, not here.
+docs/
+
 # --- AI assistant files ---
 CLAUDE.md
 GEMINI.md
