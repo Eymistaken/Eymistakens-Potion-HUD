@@ -18,12 +18,12 @@ import net.minecraft.world.effect.MobEffectCategory;
  * restyles potion icons restyles ours with it.
  *
  * <p>{@link IconStyle#DOT} is a deliberate second path that needs nothing but
- * {@code fill}: a badge in the effect's own colour, for anyone who wants the list to
- * read as colour rather than pictograms.
+ * {@code fill}: a badge in the effect's own color, for anyone who wants the list to
+ * read as color rather than pictograms.
  */
 public final class PotionIcons {
 
-    /** Fallback colours when an effect reports no colour of its own. */
+    /** Fallback colors when an effect reports no color of its own. */
     private static final int BENEFICIAL = 0x55FF55;
     private static final int HARMFUL = 0xFF5555;
     private static final int NEUTRAL = 0x55AAFF;
@@ -56,7 +56,7 @@ public final class PotionIcons {
     }
 
     /**
-     * A filled badge in the effect's own colour: the icon-free style, and the automatic
+     * A filled badge in the effect's own color: the icon-free style, and the automatic
      * stand-in whenever the sprite is missing.
      */
     private static void drawDot(GuiGraphicsExtractor context, int rgb,
@@ -71,7 +71,7 @@ public final class PotionIcons {
         Bars.roundedRect(context, x + 1, y + 1, size - 2, size - 2, Math.max(1, radius - 1), fill);
     }
 
-    /** The effect's particle colour, falling back to a colour for its category. */
+    /** The effect's particle color, falling back to a color for its category. */
     public static int effectColor(EffectSnapshot snap) {
         int color = snap.color() & 0x00FFFFFF;
         if (color != 0) return color;

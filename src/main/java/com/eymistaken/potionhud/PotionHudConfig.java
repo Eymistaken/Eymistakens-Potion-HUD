@@ -136,13 +136,13 @@ public class PotionHudConfig {
         public int warnThresholdSeconds = 8;
         public int warnColor = 0xFF5555;
         public boolean warnBlink = true;
-        /** Custom display only; there is no room to shake a vanilla icon without hitting its neighbour. */
+        /** Custom display only; there is no room to shake a vanilla icon without hitting its neighbor. */
         public boolean warnShake = false;
 
         // ENHANCED: what gets drawn onto Minecraft's own icons.
         public VanillaBar vanillaBar = VanillaBar.UNDERLINE;
         public int vanillaBarThickness = 1;
-        /** Tint the bar with the effect's own colour, so it reads as part of the icon. */
+        /** Tint the bar with the effect's own color, so it reads as part of the icon. */
         public boolean vanillaBarEffectColor = true;
         public int vanillaBarColor = 0x55FF55;
         public boolean vanillaTimer = false;
@@ -191,7 +191,7 @@ public class PotionHudConfig {
         public TimeFormat timeFormat = TimeFormat.CLOCK;
         public String infiniteLabel = "**:**";
 
-        // Colour
+        // Color
         public ColorMode colorMode = ColorMode.SINGLE;
         public int textColor = 0xFFFFFF;
         public int positiveColor = 0x55FF55;
@@ -291,7 +291,7 @@ public class PotionHudConfig {
     /**
      * Note a setting change without touching the disk.
      *
-     * <p>Settings arrive one at a time from sliders and colour pickers, so writing on
+     * <p>Settings arrive one at a time from sliders and color pickers, so writing on
      * every change would mean a file write per dragged pixel. {@link #flush()} does the
      * actual write, and it is driven by the HUD's own save cycle.
      */

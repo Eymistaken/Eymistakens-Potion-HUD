@@ -28,7 +28,7 @@ import net.minecraft.world.effect.MobEffectInstance;
  * @param visible      false when the effect's particles are hidden
  * @param infinite     true for an infinite-duration effect
  * @param category     beneficial / neutral / harmful
- * @param color        the effect's own particle colour as RGB, no alpha
+ * @param color        the effect's own particle color as RGB, no alpha
  */
 public record EffectSnapshot(
     Holder<MobEffect> effect,

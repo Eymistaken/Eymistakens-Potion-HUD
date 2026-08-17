@@ -66,7 +66,7 @@ public final class Bars {
     }
 
     /**
-     * Scale an ARGB colour's alpha by {@code factor}, clamped to {@code [0,1]}, leaving
+     * Scale an ARGB color's alpha by {@code factor}, clamped to {@code [0,1]}, leaving
      * its RGB alone.
      */
     public static int withAlpha(int argb, float factor) {
@@ -77,16 +77,16 @@ public final class Bars {
     }
 
     /**
-     * Pack a background colour and an 0..255 opacity into one ARGB int.
+     * Pack a background color and an 0..255 opacity into one ARGB int.
      *
-     * @param color   RGB colour; any alpha byte on it is ignored
+     * @param color   RGB color; any alpha byte on it is ignored
      * @param opacity 0..255
      */
     public static int packBg(int color, int opacity) {
         return ((opacity & 0xFF) << 24) | (color & 0x00FFFFFF);
     }
 
-    /** Blend two RGB colours; alpha comes from neither, callers pack it themselves. */
+    /** Blend two RGB colors; alpha comes from neither, callers pack it themselves. */
     public static int lerpColor(int from, int to, float t) {
         if (t <= 0f) return from;
         if (t >= 1f) return to;

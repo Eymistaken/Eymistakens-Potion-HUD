@@ -1,7 +1,6 @@
 package com.eymistaken.potionhud.view;
 
 import com.eymistaken.potionhud.EffectSnapshot;
-import com.eymistaken.potionhud.EffectTracker;
 import com.eymistaken.potionhud.HudCompat;
 import com.eymistaken.potionhud.PotionHudConfig;
 import com.eymistaken.potionhud.PotionHudConfig.ColorMode;
@@ -21,11 +20,12 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Supplier;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.util.Mth;
 
 /**
- * The effect list itself: layout, colour, animation and drawing, with nothing in it that
+ * The effect list itself: layout, color, animation and drawing, with nothing in it that
  * knows whether it is being shown as a HUD module or as a standalone overlay.
  *
  * <p>Everything is measured in an unscaled local grid and the grid is scaled as a whole,
@@ -38,6 +38,22 @@ public final class PotionListView {
     private static final int PADDING = 2;
     private static final String PLACEHOLDER = "Potion HUD";
 
+    /**
+     * Where the effects to draw come from. The live view reads the tracker; a preview
+     * reads stand-ins, so it has something to show with no world loaded.
+     */
+    private final Supplier<List<EffectSnapshot>> source;
+
+    /**
+     * True for a view that is illustrating the settings rather than reporting the game.
+     *
+     * <p>It buys two things a live view must not have: something to draw when the filters
+     * have eliminated everything, so the preview card can never collapse to nothing; and
+     * groups drawn stacked, ignoring where they were dragged to, because a card is about
+     * how the list looks and a group dropped across the screen would make it mostly empty.
+     */
+    private final boolean standIn;
+
     /** Per-effect arrival animation, keyed by {@link EffectSnapshot#key()}. */
     private final Map<String, Tween> entryAnims = new HashMap<>();
 
@@ -45,7 +61,25 @@ public final class PotionListView {
     private Frame lastFrame;
 
     private long comboPulseUntil = 0L;
-    private static float rainbowHue = 0f;
+
+    /**
+     * Per view rather than static: with the settings screen open the list is drawn twice a
+     * frame, once on the HUD and once in the preview card, and a shared hue would be
+     * stepped by both — so the live rainbow would visibly speed up whenever the menu was
+     * up. The host's own modules keep a separate preview hue for the same reason.
+     */
+    private float rainbowHue = 0f;
+
+    public PotionListView(Supplier<List<EffectSnapshot>> source, boolean standIn) {
+        this.source = source;
+        this.standIn = standIn;
+    }
+
+    /** The effects this view is drawing, as of the last tick. Never null. */
+    private List<EffectSnapshot> effects() {
+        List<EffectSnapshot> effects = source.get();
+        return effects == null ? List.of() : effects;
+    }
 
     private static ListSettings cfg() {
         return PotionHudConfig.instance.list;
@@ -83,15 +117,15 @@ public final class PotionListView {
     /** True when there is something worth showing right now. */
     public boolean hasContent() {
         ListSettings cfg = cfg();
-        if (cfg.alwaysShow || HudCompat.editorOpen()) return true;
-        return !EntryLayout.visible(cfg, EffectTracker.snapshots()).isEmpty();
+        if (cfg.alwaysShow || standIn || HudCompat.editorOpen()) return true;
+        return !EntryLayout.visible(cfg, effects()).isEmpty();
     }
 
     public Frame frame(TextSink sink) {
         ListSettings cfg = cfg();
         Frame f = new Frame();
         int lineHeight = sink.lineHeight();
-        List<EffectSnapshot> all = EntryLayout.visible(cfg, EffectTracker.snapshots());
+        List<EffectSnapshot> all = EntryLayout.visible(cfg, effects());
 
         if (!cfg.splitGroups) {
             f.merged = EntryLayout.build(cfg, all, sink::width, lineHeight);
@@ -111,7 +145,7 @@ public final class PotionListView {
         if (f.isEmpty()) {
             // A module with no size cannot be grabbed in the editor, so there has to be
             // something there to grab.
-            f.placeholder = HudCompat.editorOpen() || cfg.alwaysShow;
+            f.placeholder = standIn || HudCompat.editorOpen() || cfg.alwaysShow;
             if (f.placeholder) {
                 int[] size = EntryLayout.placeholderSize(cfg, sink::width, lineHeight, PLACEHOLDER);
                 f.width = size[0] + (cfg.showBackground ? PADDING * 2 : 0);
@@ -142,8 +176,9 @@ public final class PotionListView {
         boolean stackVertically = cfg.direction == Direction.DOWN || cfg.direction == Direction.UP;
         int gap = Math.max(0, cfg.spacing) + 2;
 
-        boolean posDetached = cfg.positiveXOffset != 0 || cfg.positiveYOffset != 0;
-        boolean negDetached = cfg.negativeXOffset != 0 || cfg.negativeYOffset != 0;
+        // A stand-in stacks them whatever the offsets say: see the field's javadoc.
+        boolean posDetached = !standIn && (cfg.positiveXOffset != 0 || cfg.positiveYOffset != 0);
+        boolean negDetached = !standIn && (cfg.negativeXOffset != 0 || cfg.negativeYOffset != 0);
 
         if (posDetached) {
             f.positiveX = Math.round(cfg.positiveXOffset / s);
@@ -280,7 +315,7 @@ public final class PotionListView {
         }
 
         int base = entryColor(cfg, snap, warning, pulsing);
-        // Text colours carry only this entry's own factor — the sink applies the ambient
+        // Text colors carry only this entry's own factor — the sink applies the ambient
         // fade on top. Anything drawn straight to the screen has to carry both.
         int textColor = Bars.withAlpha(base, alphaFactor);
         int timeColor = Bars.withAlpha(warning ? base : (cfg.timeColor | 0xFF000000), alphaFactor);
@@ -362,7 +397,7 @@ public final class PotionListView {
     }
 
     /** Cycles hue per call, matching how the host mod's rainbow modules behave. */
-    private static int rainbow() {
+    private int rainbow() {
         rainbowHue += 0.5f;
         if (rainbowHue > 360f) rainbowHue = 0f;
         return Mth.hsvToRgb(rainbowHue / 360f, 1.0f, 1.0f) | 0xFF000000;
@@ -407,7 +442,7 @@ public final class PotionListView {
     private void pruneAnimations() {
         if (entryAnims.isEmpty()) return;
         Set<String> live = new HashSet<>();
-        for (EffectSnapshot snap : EffectTracker.snapshots()) {
+        for (EffectSnapshot snap : effects()) {
             live.add(snap.key());
         }
         entryAnims.keySet().removeIf(key -> !live.contains(key));

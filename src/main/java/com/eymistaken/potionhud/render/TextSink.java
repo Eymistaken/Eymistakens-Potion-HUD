@@ -30,7 +30,7 @@ public final class TextSink {
         return alpha;
     }
 
-    /** Apply the ambient opacity to an ARGB colour. */
+    /** Apply the ambient opacity to an ARGB color. */
     public int col(int argb) {
         if (alpha >= 1f) return argb;
         int a = Math.round(((argb >>> 24) & 0xFF) * alpha);

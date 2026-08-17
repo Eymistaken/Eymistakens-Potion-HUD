@@ -16,6 +16,7 @@ import com.eymistaken.potionhud.PotionHudConfig.SortOrder;
 import com.eymistaken.potionhud.PotionHudConfig.Style;
 import com.eymistaken.potionhud.PotionHudConfig.TimeFormat;
 import com.eymistaken.potionhud.PotionHudConfig.VanillaBar;
+import com.eymistaken.potionhud.render.PreviewEffects;
 import com.eymistaken.potionhud.render.TextSink;
 import com.eymistaken.potionhud.render.VanillaIconGrid;
 import com.eymistaken.potionhud.util.Enums;
@@ -30,6 +31,7 @@ import com.eymistaken.simplecps.api.ColorSetting;
 import com.eymistaken.simplecps.api.CycleSetting;
 import com.eymistaken.simplecps.api.HudModule;
 import com.eymistaken.simplecps.api.HudModuleSetting;
+import com.eymistaken.simplecps.api.HudPreview;
 import com.eymistaken.simplecps.api.IHudElement;
 import com.eymistaken.simplecps.api.SettingsTab;
 import com.eymistaken.simplecps.api.SliderSetting;
@@ -60,6 +62,9 @@ public class PotionHudModule extends HudModule {
     public static final String NAME = "Eymistaken's Potion HUD";
 
     private final TextSink sink = new TextSink();
+
+    /** Built once: the host asks for it whenever its settings page changes. */
+    private final PotionPreview preview = new PotionPreview();
 
     private final GroupElement positiveGroup = new GroupElement(true);
     private final GroupElement negativeGroup = new GroupElement(false);
@@ -118,7 +123,7 @@ public class PotionHudModule extends HudModule {
     private static List<VanillaIconGrid.Cell> previewCells(int screenWidth) {
         DisplaySettings display = display();
         return VanillaIconGrid.layout(display,
-            VanillaIconGrid.previewEffects(EffectTracker.snapshots()), screenWidth);
+            PreviewEffects.forGrid(EffectTracker.snapshots()), screenWidth);
     }
 
     /**
@@ -358,6 +363,22 @@ public class PotionHudModule extends HudModule {
             Math.round(frame.negative.width * s), Math.round(frame.negative.height * s));
     }
 
+    /**
+     * The card at the top of this module's settings page.
+     *
+     * <p>Null in the one mode that genuinely draws nothing, which the host reads as "no
+     * card at all" rather than an empty one — there is no honest thing to put in it, and
+     * the cards below simply move up. Note that the master switch being off is <em>not</em>
+     * that case: Minecraft carries on drawing its own icons, so there is still something
+     * to show.
+     */
+    @Override
+    public HudPreview getPreview() {
+        DisplaySettings display = display();
+        DisplayMode mode = display.mode == null ? DisplayMode.ENHANCED : display.mode;
+        return display.enabled && mode == DisplayMode.HIDDEN ? null : preview;
+    }
+
     /** Called from the plugin's {@code ComboStreakEvent} subscription. */
     public void pulse() {
         view().pulse();
@@ -472,7 +493,7 @@ public class PotionHudModule extends HudModule {
 
     /**
      * Split the two halves apart at their current positions, so the first drag does not
-     * make them jump. Mirrors the HUD's own armour module Ungroup.
+     * make them jump. Mirrors the HUD's own armor module Ungroup.
      */
     private void ungroup() {
         ListSettings cfg = cfg();
@@ -671,7 +692,7 @@ public class PotionHudModule extends HudModule {
         List<HudModuleSetting> settings = new ArrayList<>();
 
         settings.add(new CycleSetting("Icon Style",
-            Enums.labels(IconStyle.class, "Effect Icon", "Colour Dot", "None"),
+            Enums.labels(IconStyle.class, "Effect Icon", "Color Dot", "None"),
             () -> Enums.ordinal(cfg().iconStyle),
             index -> { cfg().iconStyle = Enums.byOrdinal(IconStyle.class, index, IconStyle.SPRITE); PotionHudConfig.markDirty(); }));
         settings.add(new SliderSetting("Icon Size", 8, 24, 16,
@@ -696,15 +717,15 @@ public class PotionHudModule extends HudModule {
             () -> cfg().infiniteLabel,
             value -> { cfg().infiniteLabel = value; PotionHudConfig.markDirty(); }));
 
-        settings.addAll(colourSettings());
+        settings.addAll(colorSettings());
         return settings;
     }
 
-    /** Every colour the list draws with, plus the panel behind it. */
-    private List<HudModuleSetting> colourSettings() {
+    /** Every color the list draws with, plus the panel behind it. */
+    private List<HudModuleSetting> colorSettings() {
         List<HudModuleSetting> settings = new ArrayList<>();
 
-        settings.add(new CycleSetting("Colour Mode",
+        settings.add(new CycleSetting("Color Mode",
             Enums.labels(ColorMode.class, "Single", "By Category", "Rainbow"),
             () -> Enums.ordinal(cfg().colorMode),
             index -> { cfg().colorMode = Enums.byOrdinal(ColorMode.class, index, ColorMode.SINGLE); PotionHudConfig.markDirty(); }));
@@ -724,7 +745,7 @@ public class PotionHudModule extends HudModule {
         settings.add(new BooleanSetting("Background",
             () -> cfg().showBackground,
             value -> { cfg().showBackground = value; PotionHudConfig.markDirty(); }));
-        settings.add(new ColorSetting("Background Colour",
+        settings.add(new ColorSetting("Background Color",
             () -> cfg().backgroundColor,
             value -> { cfg().backgroundColor = value; PotionHudConfig.markDirty(); }));
         settings.add(new SliderSetting("Background Opacity", 0, 255, 128,
@@ -751,7 +772,7 @@ public class PotionHudModule extends HudModule {
         settings.add(new SliderSetting("Bar Height", 1, 6, 2,
             () -> cfg().barHeight,
             value -> { cfg().barHeight = value; PotionHudConfig.markDirty(); }));
-        settings.add(new ColorSetting("Bar Colour",
+        settings.add(new ColorSetting("Bar Color",
             () -> cfg().barColor,
             value -> { cfg().barColor = value; PotionHudConfig.markDirty(); }));
         settings.add(new SliderSetting("Bar Track Opacity", 0, 255, 140,
@@ -767,7 +788,7 @@ public class PotionHudModule extends HudModule {
         settings.add(new SliderSetting("Warning Threshold (s)", 1, 60, 8,
             () -> display().warnThresholdSeconds,
             value -> { display().warnThresholdSeconds = value; PotionHudConfig.markDirty(); }));
-        settings.add(new ColorSetting("Warning Colour",
+        settings.add(new ColorSetting("Warning Color",
             () -> display().warnColor,
             value -> { display().warnColor = value; PotionHudConfig.markDirty(); }));
         settings.add(new BooleanSetting("Warning Blink",
@@ -836,17 +857,17 @@ public class PotionHudModule extends HudModule {
         settings.add(new SliderSetting("Underline Thickness", 1, 3, 1,
             () -> display().vanillaBarThickness,
             value -> { display().vanillaBarThickness = value; PotionHudConfig.markDirty(); }));
-        settings.add(new BooleanSetting("Use Effect Colour",
+        settings.add(new BooleanSetting("Use Effect Color",
             () -> display().vanillaBarEffectColor,
             value -> { display().vanillaBarEffectColor = value; PotionHudConfig.markDirty(); }));
-        settings.add(new ColorSetting("Fixed Colour",
+        settings.add(new ColorSetting("Fixed Color",
             () -> display().vanillaBarColor,
             value -> { display().vanillaBarColor = value; PotionHudConfig.markDirty(); }));
 
         settings.add(new BooleanSetting("Show Timer",
             () -> display().vanillaTimer,
             value -> { display().vanillaTimer = value; PotionHudConfig.markDirty(); }));
-        settings.add(new ColorSetting("Timer Colour",
+        settings.add(new ColorSetting("Timer Color",
             () -> display().vanillaTimerColor,
             value -> { display().vanillaTimerColor = value; PotionHudConfig.markDirty(); }));
         settings.add(new BooleanSetting("Show Level",

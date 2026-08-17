@@ -79,16 +79,16 @@ public final class ClothConfigScreen {
 
         bool(category, entries, "Low Time Warning", displayCfg().warnLowTime, defaults.warnLowTime, v -> displayCfg().warnLowTime = v);
         slider(category, entries, "Warning Threshold (s)", displayCfg().warnThresholdSeconds, defaults.warnThresholdSeconds, 1, 60, v -> displayCfg().warnThresholdSeconds = v);
-        colour(category, entries, "Warning Colour", displayCfg().warnColor, defaults.warnColor, v -> displayCfg().warnColor = v);
+        color(category, entries, "Warning Color", displayCfg().warnColor, defaults.warnColor, v -> displayCfg().warnColor = v);
         bool(category, entries, "Warning Blink", displayCfg().warnBlink, defaults.warnBlink, v -> displayCfg().warnBlink = v);
         bool(category, entries, "Warning Shake (custom only)", displayCfg().warnShake, defaults.warnShake, v -> displayCfg().warnShake = v);
 
         select(category, entries, "Enhanced: Duration Style", VanillaBar.class, displayCfg().vanillaBar, defaults.vanillaBar, v -> displayCfg().vanillaBar = v);
         slider(category, entries, "Enhanced: Underline Thickness", displayCfg().vanillaBarThickness, defaults.vanillaBarThickness, 1, 3, v -> displayCfg().vanillaBarThickness = v);
-        bool(category, entries, "Enhanced: Use Effect Colour", displayCfg().vanillaBarEffectColor, defaults.vanillaBarEffectColor, v -> displayCfg().vanillaBarEffectColor = v);
-        colour(category, entries, "Enhanced: Fixed Colour", displayCfg().vanillaBarColor, defaults.vanillaBarColor, v -> displayCfg().vanillaBarColor = v);
+        bool(category, entries, "Enhanced: Use Effect Color", displayCfg().vanillaBarEffectColor, defaults.vanillaBarEffectColor, v -> displayCfg().vanillaBarEffectColor = v);
+        color(category, entries, "Enhanced: Fixed Color", displayCfg().vanillaBarColor, defaults.vanillaBarColor, v -> displayCfg().vanillaBarColor = v);
         bool(category, entries, "Enhanced: Show Timer", displayCfg().vanillaTimer, defaults.vanillaTimer, v -> displayCfg().vanillaTimer = v);
-        colour(category, entries, "Enhanced: Timer Colour", displayCfg().vanillaTimerColor, defaults.vanillaTimerColor, v -> displayCfg().vanillaTimerColor = v);
+        color(category, entries, "Enhanced: Timer Color", displayCfg().vanillaTimerColor, defaults.vanillaTimerColor, v -> displayCfg().vanillaTimerColor = v);
         bool(category, entries, "Enhanced: Show Level", displayCfg().vanillaLevel, defaults.vanillaLevel, v -> displayCfg().vanillaLevel = v);
 
         slider(category, entries, "Enhanced: Icon Spacing", displayCfg().gridPitch, defaults.gridPitch, 16, 40, v -> displayCfg().gridPitch = v);
@@ -123,22 +123,22 @@ public final class ClothConfigScreen {
         select(category, entries, "Duration Format", TimeFormat.class, cfg().timeFormat, defaults.timeFormat, v -> cfg().timeFormat = v);
         text(category, entries, "Infinite Label", cfg().infiniteLabel, defaults.infiniteLabel, v -> cfg().infiniteLabel = v);
 
-        select(category, entries, "Colour Mode", ColorMode.class, cfg().colorMode, defaults.colorMode, v -> cfg().colorMode = v);
-        colour(category, entries, "Text Colour", cfg().textColor, defaults.textColor, v -> cfg().textColor = v);
-        colour(category, entries, "Positive Colour", cfg().positiveColor, defaults.positiveColor, v -> cfg().positiveColor = v);
-        colour(category, entries, "Negative Colour", cfg().negativeColor, defaults.negativeColor, v -> cfg().negativeColor = v);
-        colour(category, entries, "Neutral Colour", cfg().neutralColor, defaults.neutralColor, v -> cfg().neutralColor = v);
-        colour(category, entries, "Timer Colour", cfg().timeColor, defaults.timeColor, v -> cfg().timeColor = v);
+        select(category, entries, "Color Mode", ColorMode.class, cfg().colorMode, defaults.colorMode, v -> cfg().colorMode = v);
+        color(category, entries, "Text Color", cfg().textColor, defaults.textColor, v -> cfg().textColor = v);
+        color(category, entries, "Positive Color", cfg().positiveColor, defaults.positiveColor, v -> cfg().positiveColor = v);
+        color(category, entries, "Negative Color", cfg().negativeColor, defaults.negativeColor, v -> cfg().negativeColor = v);
+        color(category, entries, "Neutral Color", cfg().neutralColor, defaults.neutralColor, v -> cfg().neutralColor = v);
+        color(category, entries, "Timer Color", cfg().timeColor, defaults.timeColor, v -> cfg().timeColor = v);
 
         bool(category, entries, "Show Background", cfg().showBackground, defaults.showBackground, v -> cfg().showBackground = v);
-        colour(category, entries, "Background Colour", cfg().backgroundColor, defaults.backgroundColor, v -> cfg().backgroundColor = v);
+        color(category, entries, "Background Color", cfg().backgroundColor, defaults.backgroundColor, v -> cfg().backgroundColor = v);
         slider(category, entries, "Background Opacity", cfg().backgroundOpacity, defaults.backgroundOpacity, 0, 255, v -> cfg().backgroundOpacity = v);
         bool(category, entries, "Rounded Corners", cfg().roundedBackground, defaults.roundedBackground, v -> cfg().roundedBackground = v);
 
         bool(category, entries, "Show Duration Bar", cfg().showBar, defaults.showBar, v -> cfg().showBar = v);
         select(category, entries, "Bar Placement", BarStyle.class, cfg().barStyle, defaults.barStyle, v -> cfg().barStyle = v);
         slider(category, entries, "Bar Height", cfg().barHeight, defaults.barHeight, 1, 6, v -> cfg().barHeight = v);
-        colour(category, entries, "Bar Colour", cfg().barColor, defaults.barColor, v -> cfg().barColor = v);
+        color(category, entries, "Bar Color", cfg().barColor, defaults.barColor, v -> cfg().barColor = v);
         slider(category, entries, "Bar Track Opacity", cfg().barTrackOpacity, defaults.barTrackOpacity, 0, 255, v -> cfg().barTrackOpacity = v);
 
         bool(category, entries, "Hide Ambient (Beacon)", cfg().hideAmbient, defaults.hideAmbient, v -> cfg().hideAmbient = v);
@@ -200,7 +200,7 @@ public final class ClothConfigScreen {
             .build());
     }
 
-    private static void colour(ConfigCategory category, ConfigEntryBuilder entries, String label,
+    private static void color(ConfigCategory category, ConfigEntryBuilder entries, String label,
                                int current, int fallback, Consumer<Integer> setter) {
         category.addEntry(entries.startColorField(Component.literal(label), current & 0x00FFFFFF)
             .setDefaultValue(fallback & 0x00FFFFFF)

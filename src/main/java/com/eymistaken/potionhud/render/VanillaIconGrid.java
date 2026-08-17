@@ -13,11 +13,7 @@ import java.util.Comparator;
 import java.util.List;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.renderer.RenderPipelines;
-import net.minecraft.core.Holder;
 import net.minecraft.resources.Identifier;
-import net.minecraft.world.effect.MobEffect;
-import net.minecraft.world.effect.MobEffectInstance;
-import net.minecraft.world.effect.MobEffects;
 
 /**
  * Minecraft's own top-right effect grid: where each icon lands, and everything this mod
@@ -42,9 +38,6 @@ public final class VanillaIconGrid {
         Identifier.fromNamespaceAndPath("minecraft", "hud/effect_background");
     private static final Identifier FRAME_AMBIENT =
         Identifier.fromNamespaceAndPath("minecraft", "hud/effect_background_ambient");
-
-    /** Built once, on first use, and only ever from the editor. See {@link #previewEffects}. */
-    private static List<EffectSnapshot> samples;
 
     private VanillaIconGrid() {}
 
@@ -110,7 +103,7 @@ public final class VanillaIconGrid {
 
     /**
      * Vanilla's own ordering: ambient effects first, then ascending duration, then
-     * colour — all reversed. Reproduced so the extras land on the icon they belong to.
+     * color — all reversed. Reproduced so the extras land on the icon they belong to.
      */
     public static List<EffectSnapshot> vanillaOrder(List<EffectSnapshot> source) {
         List<EffectSnapshot> out = new ArrayList<>(source.size());
@@ -233,7 +226,7 @@ public final class VanillaIconGrid {
         if (filled > 0) {
             Bars.rect(context, x + FRAME_INSET, barY, filled, thickness,
                 Bars.withAlpha(0xE0000000 | rgb, fade));
-            // One row of the same colour at a fraction of the alpha, bleeding up into the
+            // One row of the same color at a fraction of the alpha, bleeding up into the
             // sprite. This is what stops the line looking pasted on.
             if (barY - 1 > y) {
                 Bars.rect(context, x + FRAME_INSET, barY - 1, filled, 1,
@@ -263,44 +256,5 @@ public final class VanillaIconGrid {
 
     private static int opaque(int rgb) {
         return 0xFF000000 | (rgb & 0x00FFFFFF);
-    }
-
-    // --- Editor preview -------------------------------------------------------------
-
-    /**
-     * What the editor's preview should draw.
-     *
-     * <p>The player's own effects whenever there are any. When there are none the grid
-     * would be empty, and an empty grid is a module with no size — nothing to grab, and no
-     * way back to another display mode. Two stand-ins fix that and double as a look at
-     * what the duration bar and timer settings actually do.
-     */
-    public static List<EffectSnapshot> previewEffects(List<EffectSnapshot> live) {
-        for (EffectSnapshot snap : live) {
-            if (snap.showIcon()) return live;
-        }
-        return samples();
-    }
-
-    /** One of each row: something beneficial on top, something harmful under it. */
-    private static List<EffectSnapshot> samples() {
-        if (samples == null) {
-            List<EffectSnapshot> built = new ArrayList<>(2);
-            // Held part-spent on purpose, so the bar has something to show.
-            sample(built, MobEffects.SPEED, 24 * 20, 0, 40 * 20);
-            sample(built, MobEffects.POISON, 21 * 20, 1, 30 * 20);
-            samples = List.copyOf(built);
-        }
-        return samples;
-    }
-
-    private static void sample(List<EffectSnapshot> out, Holder<MobEffect> effect,
-                               int duration, int amplifier, int peak) {
-        try {
-            out.add(EffectSnapshot.of(new MobEffectInstance(effect, duration, amplifier), peak));
-        } catch (Exception ignored) {
-            // A stand-in is a convenience; failing to build one must not take the editor
-            // down with it. The caller falls back to its own placeholder.
-        }
     }
 }
