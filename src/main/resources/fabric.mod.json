@@ -25,20 +25,20 @@
         ]
     },
     "depends": {
-        "fabricloader": ">=0.18.4",
+        "fabricloader": ">=0.19.5",
         "fabric-api": "*",
-        "minecraft": ">=26.1 <=26.2",
+        "minecraft": "26.3",
         "java": ">=25"
     },
     "suggests": {
-        "simplecps": ">=1.1.1-6",
+        "simplecps": ">=1.2.3",
         "cloth-config": "*",
         "modmenu": "*"
     },
     "custom": {
         "eympotionhud:notes": [
             "All three suggestions are genuinely optional and each is guarded by an isModLoaded check: simplecps turns the displays into draggable HUD modules, cloth-config gives the standalone build a settings screen, and modmenu adds the button that opens it.",
-            "The simplecps floor carries its -6 suffix on purpose. Semver ranks 1.1.1-7 BELOW plain 1.1.1, so a >=1.1.1 floor would reject the very releases this was built against."
+            "Eymistaken's HUD 1.2.3 is the first compatible 26.3 release."
         ]
     }
 }

@@ -3,6 +3,7 @@ package com.eymistaken.potionhud;
 import com.eymistaken.potionhud.PotionHudConfig.DisplayMode;
 import com.eymistaken.potionhud.render.VanillaEffectOverlay;
 import com.eymistaken.potionhud.standalone.StandaloneHud;
+import com.mojang.blaze3d.platform.InputConstants;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
@@ -13,7 +14,6 @@ import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
-import org.lwjgl.glfw.GLFW;
 
 /**
  * Everything that happens once, at client start, whether or not Eymistaken's HUD is
@@ -51,7 +51,7 @@ public class PotionHudClient implements ClientModInitializer {
 
         cycleKey = KeyMappingHelper.registerKeyMapping(new KeyMapping(
             "key.eympotionhud.cycle",
-            GLFW.GLFW_KEY_UNKNOWN,
+            InputConstants.UNKNOWN.getValue(),
             new KeyMapping.Category(Identifier.fromNamespaceAndPath("eympotionhud", "categories.eympotionhud"))
         ));
 

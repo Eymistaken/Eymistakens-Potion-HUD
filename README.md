@@ -54,4 +54,4 @@ A keybind cycles the four display modes in-game and names the one you landed on,
 
 ## Requirements
 
-Fabric for Minecraft 26.2, plus Fabric API. Client-side only — it does nothing on a server and does not need to be installed on one.
+Fabric Loader 0.19.5 or newer for Minecraft 26.3, plus Fabric API. Eymistaken's HUD 1.2.3, Cloth Config 26.3.159, and Mod Menu 21.0.0 are optional. Client-side only — it does nothing on a server and does not need to be installed on one.

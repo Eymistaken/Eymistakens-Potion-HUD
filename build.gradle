@@ -1,5 +1,5 @@
 plugins {
-    id 'net.fabricmc.fabric-loom' version '1.16-SNAPSHOT'
+    id 'net.fabricmc.fabric-loom' version '1.17.21'
     id 'maven-publish'
 }
 
@@ -25,9 +25,8 @@ dependencies {
     implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 
     // All three are compileOnly on purpose: every one of them is optional at runtime, and
-    // the code that touches them is behind a FabricLoader.isModLoaded check. Loom 1.16
-    // dropped the mod* dependency configurations the HUD's API guide mentions, which is
-    // why Eymistaken's HUD declares its own Fabric dependencies this way too.
+    // the code that touches them is behind a FabricLoader.isModLoaded check. Keeping
+    // them off the runtime classpath lets the standalone path start without the HUD.
     //
     // The HUD: present, this mod is one of its modules; absent, it draws itself.
     compileOnly "com.github.Eymistaken:Eymistaken-s-hud:${project.eymistakens_hud_version}"
