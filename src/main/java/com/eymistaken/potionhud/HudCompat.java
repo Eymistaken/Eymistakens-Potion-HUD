@@ -1,6 +1,7 @@
 package com.eymistaken.potionhud;
 
 import net.fabricmc.loader.api.FabricLoader;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
 /**
@@ -46,6 +47,14 @@ public final class HudCompat {
     /** True while the HUD's drag-and-drop editor is open. Always false without the HUD. */
     public static boolean editorOpen() {
         return PRESENT && HudBridge.editorOpen();
+    }
+
+    /**
+     * The HUD's settings screen, open on this mod's page. Null without the HUD, or when
+     * our module did not make it into the HUD.
+     */
+    public static Screen settingsScreen(Screen parent) {
+        return PRESENT ? HudBridge.settingsScreen(parent) : null;
     }
 
     /**

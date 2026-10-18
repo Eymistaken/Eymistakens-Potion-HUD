@@ -37,7 +37,7 @@
     },
     "custom": {
         "eympotionhud:notes": [
-            "All three suggestions are genuinely optional and each is guarded by an isModLoaded check: simplecps turns the displays into draggable HUD modules, cloth-config gives the standalone build a settings screen, and modmenu adds the button that opens it.",
+            "All three suggestions are genuinely optional and each is guarded by an isModLoaded check: simplecps turns the displays into draggable HUD modules, cloth-config gives the standalone build a settings screen, and modmenu adds the button that opens it, or opens the HUD's page for this mod when Cloth is absent.",
             "Eymistaken's HUD 1.2.3 is the first compatible 26.3 release."
         ]
     }

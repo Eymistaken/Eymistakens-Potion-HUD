@@ -1,10 +1,16 @@
 package com.eymistaken.potionhud;
 
+import com.eymistaken.potionhud.modules.PotionHudModule;
+import com.eymistaken.simplecps.HudModuleManager;
 import com.eymistaken.simplecps.SimpleCPSConfig;
 import com.eymistaken.simplecps.api.EymistakenHudEventBus;
+import com.eymistaken.simplecps.api.HudModule;
 import com.eymistaken.simplecps.gui.HudEditorScreen;
+import com.eymistaken.simplecps.gui.settings.HudSettingsScreen;
+import com.eymistaken.simplecps.gui.settings.SettingsSchema;
 import com.eymistaken.simplecps.util.EymHudFonts;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
 /**
@@ -35,6 +41,19 @@ final class HudBridge {
     static boolean editorOpen() {
         Minecraft client = Minecraft.getInstance();
         return client.gui != null && client.gui.screen() instanceof HudEditorScreen;
+    }
+
+    /**
+     * The HUD's settings screen, opened on our module's page. Null when the module never
+     * registered (a name clash), since the screen would then have no page of ours to show.
+     */
+    static Screen settingsScreen(Screen parent) {
+        for (HudModule module : HudModuleManager.getInstance().getModules()) {
+            if (module instanceof PotionHudModule) {
+                return new HudSettingsScreen(parent, SettingsSchema.pageIdFor(module));
+            }
+        }
+        return null;
     }
 
     static Component styled(String text) {
